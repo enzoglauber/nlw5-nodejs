@@ -1,6 +1,14 @@
-import express from "express";
+import './database';
 
+import express from 'express';
+import { routes } from './routes';
+import createConnection from './database';
 const app = express();
+
+createConnection();
+app.use(express.json())
+app.use(routes);
+
 
 app.get("/", (resquest, response) => {
   return response.json({ message: "Olá NLW 05!" })
