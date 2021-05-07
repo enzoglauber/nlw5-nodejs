@@ -9,6 +9,8 @@ yarn add ts-node-dev -D
 yarn add typeorm reflect-metadata sqlite3
 yarn orm migration:run
 yarn orm migration:create -n CreateSettings
+yarn orm migration:create -n CreateUsers
+yarn orm migration:create -n CreateMessages
 
 
 yarn add uuid
