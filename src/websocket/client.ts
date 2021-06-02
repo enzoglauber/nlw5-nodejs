@@ -9,13 +9,11 @@ interface IParams {
 }
 
 io.on("connect", (socket) => {
-  const connectionsService = new ConnectionService();
+  const connectionService = new ConnectionService();
   const usersService = new UserService();
   const messagesService = new MessageService();
 
   socket.on("client_first_access", async (params) => {
-    console.log(params);
-
     const socket_id = socket.id;
     const { text, email } = params as IParams;
     let user_id = null;
@@ -24,7 +22,7 @@ io.on("connect", (socket) => {
 
     if (!userExists) {
       const user = await usersService.create({ email });
-      await connectionsService.create({
+      await connectionService.create({
         socket_id,
         user_id: user.id,
       });
@@ -33,16 +31,16 @@ io.on("connect", (socket) => {
     } else {
       user_id = userExists.id;
 
-      const connection = await connectionsService.findByUser(userExists.id);
+      const connection = await connectionService.findByUser(userExists.id);
 
       if (!connection) {
-        await connectionsService.create({
+        await connectionService.create({
           socket_id,
           user_id: userExists.id,
         });
       } else {
         connection.socket_id = socket_id;
-        await connectionsService.create(connection);
+        await connectionService.create(connection);
       }
     }
 
@@ -50,5 +48,29 @@ io.on("connect", (socket) => {
       text,
       user_id,
     });
+
+    const allMessages = await messagesService.list(user_id);
+
+    socket.emit("client_list_all_messages", allMessages);
+    const allUsers = await connectionService.findAllWithoutAdmin();
+    io.emit("admin_list_all_users", allUsers);
   });
+
+  socket.on("client_send_to_admin", async (params) => {
+    const { text, socket_admin_id } = params;
+
+    const socket_id = socket.id;
+
+    const { user_id } = await connectionService.findBySocketID(socket_id);
+
+    const message = await messagesService.create({
+      text,
+      user_id,
+    });
+
+    io.to(socket_admin_id).emit("admin_receive_message", {
+      message,
+      socket_id,
+    });
+  })
 });
